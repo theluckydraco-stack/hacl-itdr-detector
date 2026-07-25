@@ -6,17 +6,17 @@ import json
 from collections.abc import Iterable
 from pathlib import Path
 
-from .models import PasswordSprayAlert
+from .models import SecurityAlert
 
 
-def alerts_to_jsonl(alerts: Iterable[PasswordSprayAlert]) -> str:
+def alerts_to_jsonl(alerts: Iterable[SecurityAlert]) -> str:
     """Serialise alerts as deterministic JSON Lines output."""
 
     lines = [json.dumps(alert.to_dict(), sort_keys=True) for alert in alerts]
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def write_alerts(path: Path, alerts: Iterable[PasswordSprayAlert]) -> None:
+def write_alerts(path: Path, alerts: Iterable[SecurityAlert]) -> None:
     """Write JSON Lines alerts, creating parent directories when required."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
