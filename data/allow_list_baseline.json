@@ -1,0 +1,14 @@
+{
+  "asset_id": "hacl-primary-allow-list",
+  "byte_length": 34,
+  "entries": [
+    "10.10.10.25",
+    "10.10.10.5",
+    "192.0.2.50"
+  ],
+  "entry_count": 3,
+  "generated_at_utc": "2026-07-25T17:30:00Z",
+  "protected_path": "data/allow_list.txt",
+  "schema_version": "1.0",
+  "sha256": "c853f425499e761cff8dda18536d278d390f9e8f602a5d7a25a10d870a1ba8ae"
+}

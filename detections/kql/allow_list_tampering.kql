@@ -1,0 +1,16 @@
+// hACL protected allow-list modification draft.
+// Requires Audit File System, an object SACL, and Security event 4663 ingestion.
+let ProtectedFileSuffix = @"\allow_list.txt";
+SecurityEvent
+| where EventID == 4663
+| where ObjectName endswith ProtectedFileSuffix
+| where AccessList has_any ("WriteData", "AppendData", "Delete", "WriteAttributes")
+| project
+    TimeGenerated,
+    Computer,
+    SubjectAccount = strcat(SubjectDomainName, @"\", SubjectUserName),
+    ObjectName,
+    ProcessName,
+    AccessList,
+    HandleId
+| order by TimeGenerated asc

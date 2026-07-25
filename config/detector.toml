@@ -4,3 +4,6 @@ minimum_failed_attempts = 5
 minimum_distinct_accounts = 5
 success_correlation_minutes = 30
 duplicate_suppression_minutes = 15
+
+[integrity]
+correlation_window_minutes = 60
