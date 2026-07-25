@@ -7,6 +7,7 @@ import pytest
 
 from hacl_itdr.alerts import alerts_to_jsonl, write_alerts
 from hacl_itdr.cli import main
+from hacl_itdr.integrity import create_baseline, write_baseline
 
 
 def write_inputs(tmp_path: Path) -> tuple[Path, Path, Path]:
@@ -47,7 +48,9 @@ def write_inputs(tmp_path: Path) -> tuple[Path, Path, Path]:
         "minimum_failed_attempts = 5\n"
         "minimum_distinct_accounts = 5\n"
         "success_correlation_minutes = 30\n"
-        "duplicate_suppression_minutes = 15\n",
+        "duplicate_suppression_minutes = 15\n"
+        "[integrity]\n"
+        "correlation_window_minutes = 60\n",
         encoding="utf-8",
     )
     return events, employees, config
@@ -59,16 +62,13 @@ def test_alerts_to_jsonl_empty() -> None:
 
 def test_write_alerts_creates_parent_directory(tmp_path: Path) -> None:
     output = tmp_path / "nested" / "alerts.jsonl"
-
     write_alerts(output, [])
-
     assert output.read_text(encoding="utf-8") == ""
 
 
 def test_cli_writes_alert_file(tmp_path: Path) -> None:
     events, employees, config = write_inputs(tmp_path)
     output = tmp_path / "output" / "alerts.jsonl"
-
     exit_code = main(
         [
             "--events",
@@ -81,7 +81,6 @@ def test_cli_writes_alert_file(tmp_path: Path) -> None:
             str(output),
         ]
     )
-
     assert exit_code == 0
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["source_ip"] == "203.0.113.25"
@@ -92,7 +91,6 @@ def test_cli_prints_alert_to_stdout(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     events, employees, config = write_inputs(tmp_path)
-
     exit_code = main(
         [
             "--events",
@@ -103,7 +101,6 @@ def test_cli_prints_alert_to_stdout(
             str(config),
         ]
     )
-
     captured = capsys.readouterr()
     assert exit_code == 0
     assert '"source_ip": "203.0.113.25"' in captured.out
@@ -114,7 +111,6 @@ def test_cli_returns_two_for_parse_error(
 ) -> None:
     events, employees, config = write_inputs(tmp_path)
     events.write_text("not-json\n", encoding="utf-8")
-
     exit_code = main(
         [
             "--events",
@@ -125,7 +121,71 @@ def test_cli_returns_two_for_parse_error(
             str(config),
         ]
     )
-
     captured = capsys.readouterr()
     assert exit_code == 2
     assert "invalid JSON" in captured.err
+
+
+def test_cli_requires_allow_list_and_baseline_together(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    events, employees, config = write_inputs(tmp_path)
+    exit_code = main(
+        [
+            "--events",
+            str(events),
+            "--employees",
+            str(employees),
+            "--config",
+            str(config),
+            "--allow-list",
+            str(tmp_path / "allow.txt"),
+        ]
+    )
+    assert exit_code == 2
+    assert "must be supplied together" in capsys.readouterr().err
+
+
+def test_cli_emits_integrity_alert_and_timeline(tmp_path: Path) -> None:
+    events, employees, config = write_inputs(tmp_path)
+    allow_list = tmp_path / "allow.txt"
+    allow_list.write_text("10.0.0.1\n10.0.0.2\n", encoding="utf-8")
+    manifest = tmp_path / "baseline.json"
+    baseline = create_baseline(allow_list, asset_id="primary")
+    write_baseline(manifest, baseline)
+    allow_list.write_text(
+        "10.0.0.1\n10.0.0.2\n198.51.100.20\n", encoding="utf-8"
+    )
+    output = tmp_path / "alerts.jsonl"
+    timeline = tmp_path / "timeline.md"
+
+    exit_code = main(
+        [
+            "--events",
+            str(events),
+            "--employees",
+            str(employees),
+            "--config",
+            str(config),
+            "--allow-list",
+            str(allow_list),
+            "--baseline",
+            str(manifest),
+            "--output",
+            str(output),
+            "--timeline-output",
+            str(timeline),
+        ]
+    )
+
+    assert exit_code == 0
+    payloads = [
+        json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()
+    ]
+    assert {payload["alert_type"] for payload in payloads} == {
+        "password_spray",
+        "allow_list_integrity",
+    }
+    timeline_text = timeline.read_text(encoding="utf-8")
+    assert "password_spray_threshold_crossed" in timeline_text
+    assert "allow_list_entries_added" in timeline_text
