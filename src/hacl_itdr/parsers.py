@@ -1,4 +1,4 @@
-"""Strict parsers for synthetic authentication and identity data."""
+"""Strict parsers for synthetic authentication, identity, and detector data."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .models import AuthEvent, Employee, PasswordSprayConfig
+from .models import AuthEvent, Employee, IntegrityConfig, PasswordSprayConfig
 
 SUPPORTED_EVENT_IDS = {4624, 4625, 4740}
 
@@ -159,14 +159,18 @@ def load_employees(path: Path) -> dict[str, Employee]:
     return employees
 
 
-def load_config(path: Path) -> PasswordSprayConfig:
-    """Load detector thresholds from a TOML configuration file."""
-
+def _load_toml(path: Path) -> dict[str, Any]:
     try:
         payload = tomllib.loads(path.read_text(encoding="utf-8"))
     except (OSError, tomllib.TOMLDecodeError) as exc:
         raise ParseError(f"unable to parse detector configuration: {path}") from exc
+    return payload
 
+
+def load_config(path: Path) -> PasswordSprayConfig:
+    """Load password-spray thresholds from a TOML configuration file."""
+
+    payload = _load_toml(path)
     section = payload.get("password_spray")
     if not isinstance(section, dict):
         raise ParseError(f"{path}: missing [password_spray] configuration")
@@ -186,3 +190,20 @@ def load_config(path: Path) -> PasswordSprayConfig:
         )
     except (TypeError, ValueError) as exc:
         raise ParseError(f"{path}: invalid password_spray configuration") from exc
+
+
+def load_integrity_config(path: Path) -> IntegrityConfig:
+    """Load optional integrity-correlation settings from detector TOML."""
+
+    payload = _load_toml(path)
+    section = payload.get("integrity", {})
+    if not isinstance(section, dict):
+        raise ParseError(f"{path}: [integrity] must be a table")
+    try:
+        return IntegrityConfig(
+            correlation_window_minutes=int(
+                section.get("correlation_window_minutes", 60)
+            )
+        )
+    except (TypeError, ValueError) as exc:
+        raise ParseError(f"{path}: invalid integrity configuration") from exc
