@@ -1,0 +1,39 @@
+{
+  "4624": [
+    "TargetUserName",
+    "TargetDomainName",
+    "LogonType",
+    "WorkstationName",
+    "IpAddress",
+    "IpPort",
+    "AuthenticationPackageName"
+  ],
+  "4625": [
+    "TargetUserName",
+    "TargetDomainName",
+    "Status",
+    "SubStatus",
+    "LogonType",
+    "WorkstationName",
+    "IpAddress",
+    "IpPort",
+    "AuthenticationPackageName"
+  ],
+  "4663": [
+    "SubjectUserName",
+    "SubjectDomainName",
+    "ObjectName",
+    "HandleId",
+    "AccessList",
+    "AccessMask",
+    "ProcessId",
+    "ProcessName"
+  ],
+  "4740": [
+    "TargetUserName",
+    "TargetDomainName",
+    "CallerComputerName",
+    "SubjectUserName",
+    "SubjectDomainName"
+  ]
+}
