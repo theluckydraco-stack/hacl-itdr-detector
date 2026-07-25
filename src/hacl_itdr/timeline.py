@@ -6,10 +6,12 @@ import json
 import uuid
 from collections.abc import Iterable
 from datetime import timedelta
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .models import (
     AuthEvent,
+    FileAccessEvent,
+    InactiveAccountAlert,
     IntegrityAlert,
     IntegrityConfig,
     PasswordSprayAlert,
@@ -44,6 +46,31 @@ def _password_spray_event(alert: PasswordSprayAlert) -> TimelineEvent:
             "detection_start_utc": alert.detection_start_utc.isoformat(),
             "targeted_accounts": list(alert.targeted_accounts),
             "privileged_accounts": list(alert.privileged_accounts),
+        },
+    )
+
+
+def _inactive_account_event(alert: InactiveAccountAlert) -> TimelineEvent:
+    return TimelineEvent(
+        event_id=_event_id("inactive-account", alert.alert_id),
+        timestamp_utc=alert.detected_at_utc,
+        category="identity",
+        event_type="inactive_account_successful_logon",
+        severity=alert.severity,
+        summary=(
+            f"Successful logon by {alert.account}, directory status "
+            f"{alert.directory_status}, on {alert.host}"
+        ),
+        source="inactive_account_detector",
+        related_alert_ids=(alert.alert_id,),
+        details={
+            "account": alert.account,
+            "employee_id": alert.employee_id,
+            "directory_status": alert.directory_status,
+            "source_ip": alert.source_ip,
+            "workstation": alert.workstation,
+            "logon_type": alert.logon_type,
+            "privileged": alert.privileged,
         },
     )
 
@@ -110,6 +137,7 @@ def _follow_on_events(
                             "account": auth_event.account,
                             "source_ip": auth_event.source_ip,
                             "host": auth_event.host,
+                            "workstation": auth_event.workstation,
                         },
                     )
                 )
@@ -135,10 +163,59 @@ def _follow_on_events(
                         details={
                             "account": auth_event.account,
                             "host": auth_event.host,
+                            "workstation": auth_event.workstation,
                         },
                     )
                 )
     return events
+
+
+def _file_access_events(
+    source_events: Iterable[FileAccessEvent],
+    integrity_alerts: Iterable[IntegrityAlert],
+) -> list[TimelineEvent]:
+    alerts_by_name = {
+        Path(alert.protected_path).name.casefold(): alert
+        for alert in integrity_alerts
+    }
+    timeline_events: list[TimelineEvent] = []
+    for source_event in source_events:
+        object_name = PureWindowsPath(source_event.object_name).name.casefold()
+        alert = alerts_by_name.get(object_name)
+        related_alert_ids = (alert.alert_id,) if alert is not None else ()
+        severity: Severity = "high" if alert is not None else "medium"
+        timeline_events.append(
+            TimelineEvent(
+                event_id=_event_id(
+                    "file-access",
+                    source_event.timestamp_utc,
+                    source_event.host,
+                    source_event.object_name,
+                    source_event.subject_account,
+                    source_event.access_mask,
+                ),
+                timestamp_utc=source_event.timestamp_utc,
+                category="integrity",
+                event_type="windows_file_access_observed",
+                severity=severity,
+                summary=(
+                    f"Windows event 4663 recorded {source_event.subject_account} "
+                    f"accessing {source_event.object_name} with mask "
+                    f"{source_event.access_mask}"
+                ),
+                source="windows_event_4663",
+                related_alert_ids=related_alert_ids,
+                details={
+                    "host": source_event.host,
+                    "subject_account": source_event.subject_account,
+                    "object_name": source_event.object_name,
+                    "process_name": source_event.process_name,
+                    "access_mask": source_event.access_mask,
+                    "handle_id": source_event.handle_id,
+                },
+            )
+        )
+    return timeline_events
 
 
 def _correlation_events(
@@ -200,6 +277,7 @@ def build_investigation_timeline(
     auth_events: Iterable[AuthEvent],
     alerts: Iterable[SecurityAlert],
     config: IntegrityConfig,
+    file_access_events: Iterable[FileAccessEvent] = (),
 ) -> list[TimelineEvent]:
     """Build a chronological timeline from detector alerts and source events."""
 
@@ -207,16 +285,26 @@ def build_investigation_timeline(
     spray_alerts = [
         alert for alert in alert_list if isinstance(alert, PasswordSprayAlert)
     ]
+    inactive_alerts = [
+        alert for alert in alert_list if isinstance(alert, InactiveAccountAlert)
+    ]
     integrity_alerts = [
         alert for alert in alert_list if isinstance(alert, IntegrityAlert)
     ]
     timeline = [
         *(_password_spray_event(alert) for alert in spray_alerts),
+        *(_inactive_account_event(alert) for alert in inactive_alerts),
         *(_integrity_event(alert) for alert in integrity_alerts),
         *_follow_on_events(auth_events, spray_alerts),
+        *_file_access_events(file_access_events, integrity_alerts),
         *_correlation_events(spray_alerts, integrity_alerts, config),
     ]
-    category_order = {"integrity": 0, "authentication": 1, "correlation": 2}
+    category_order = {
+        "integrity": 0,
+        "authentication": 1,
+        "identity": 2,
+        "correlation": 3,
+    }
     return sorted(
         timeline,
         key=lambda event: (
