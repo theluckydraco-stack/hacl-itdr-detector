@@ -28,9 +28,7 @@ def _severity_and_confidence(
 ) -> tuple[Severity, Confidence]:
     if success_accounts and privileged_accounts:
         severity: Severity = "critical"
-    elif success_accounts:
-        severity = "high"
-    elif lockout_accounts or privileged_accounts:
+    elif success_accounts or lockout_accounts or privileged_accounts:
         severity = "high"
     else:
         severity = "medium"
