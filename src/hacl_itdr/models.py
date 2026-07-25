@@ -1,4 +1,4 @@
-"""Typed models for authentication, integrity, and investigation output."""
+"""Typed models for authentication, integrity, identity, and investigation output."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ IntegrityChangeType = Literal[
     "missing",
     "invalid",
 ]
-TimelineCategory = Literal["authentication", "integrity", "correlation"]
+TimelineCategory = Literal["authentication", "identity", "integrity", "correlation"]
 
 
 def _utc_text(value: datetime) -> str:
@@ -35,6 +35,7 @@ class AuthEvent:
     logon_type: int | None = None
     status: str | None = None
     sub_status: str | None = None
+    workstation: str | None = None
 
     @property
     def is_failure(self) -> bool:
@@ -47,6 +48,20 @@ class AuthEvent:
     @property
     def is_lockout(self) -> bool:
         return self.event_id == 4740
+
+
+@dataclass(frozen=True, slots=True)
+class FileAccessEvent:
+    """Normalised Windows Security event 4663 file-access evidence."""
+
+    timestamp_utc: datetime
+    event_id: int
+    host: str
+    subject_account: str
+    object_name: str
+    process_name: str
+    access_mask: str
+    handle_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +160,53 @@ class PasswordSprayAlert:
             "technique_id": payload.pop("technique_id"),
             "technique": payload.pop("technique_name"),
             "tactic": payload.pop("tactic"),
+        }
+        return payload
+
+
+@dataclass(frozen=True, slots=True)
+class InactiveAccountAlert:
+    """Successful logon by an identity marked non-active in the directory."""
+
+    alert_id: str
+    generated_at_utc: datetime
+    detected_at_utc: datetime
+    account: str
+    employee_id: str
+    department: str
+    directory_status: str
+    source_ip: str | None
+    host: str
+    workstation: str | None
+    logon_type: int | None
+    privileged: bool
+    severity: Severity
+    confidence: Confidence = "high"
+    title: str = "Successful logon by inactive account"
+    technique_id: str = "T1078"
+    technique_name: str = "Valid Accounts"
+    tactic: str = "Initial Access"
+    recommended_actions: tuple[str, ...] = (
+        "Confirm the directory status and account owner",
+        "Review the complete logon session and source system",
+        "Disable or contain the account through approved procedures",
+        "Check for related privilege use and lateral movement",
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["alert_type"] = "inactive_account_logon"
+        payload["schema_version"] = "1.0"
+        payload["generated_at_utc"] = _utc_text(self.generated_at_utc)
+        payload["detected_at_utc"] = _utc_text(self.detected_at_utc)
+        payload["mitre_attack"] = {
+            "technique_id": payload.pop("technique_id"),
+            "technique": payload.pop("technique_name"),
+            "tactic": payload.pop("tactic"),
+            "mapping_basis": (
+                "Contextual mapping for successful use of an identity that the "
+                "synthetic directory marks as non-active"
+            ),
         }
         return payload
 
@@ -249,4 +311,4 @@ class TimelineEvent:
         return payload
 
 
-SecurityAlert = PasswordSprayAlert | IntegrityAlert
+SecurityAlert = PasswordSprayAlert | InactiveAccountAlert | IntegrityAlert

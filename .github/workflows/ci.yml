@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/password-spray-pipeline
+      - feature/windows-schema-reporting
   pull_request:
 
 permissions:
@@ -40,6 +40,9 @@ jobs:
 
       - name: Type check
         run: mypy src tests
+
+      - name: Validate detection content
+        run: hacl-itdr-validate-detections --root .
 
       - name: Test with coverage
         run: python -m pytest

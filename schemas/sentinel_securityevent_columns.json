@@ -1,0 +1,13 @@
+[
+  "AccessMask",
+  "Computer",
+  "EventID",
+  "HandleId",
+  "IpAddress",
+  "ObjectName",
+  "ProcessName",
+  "SubjectDomainName",
+  "SubjectUserName",
+  "TargetAccount",
+  "TimeGenerated"
+]

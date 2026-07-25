@@ -1,0 +1,51 @@
+{
+  "4624": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
+    "TargetUserName",
+    "TargetDomainName",
+    "LogonType",
+    "WorkstationName",
+    "IpAddress",
+    "IpPort",
+    "AuthenticationPackageName"
+  ],
+  "4625": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
+    "TargetUserName",
+    "TargetDomainName",
+    "Status",
+    "SubStatus",
+    "LogonType",
+    "WorkstationName",
+    "IpAddress",
+    "IpPort",
+    "AuthenticationPackageName"
+  ],
+  "4663": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
+    "SubjectUserName",
+    "SubjectDomainName",
+    "ObjectName",
+    "HandleId",
+    "AccessList",
+    "AccessMask",
+    "ProcessId",
+    "ProcessName"
+  ],
+  "4740": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
+    "TargetUserName",
+    "TargetDomainName",
+    "CallerComputerName",
+    "SubjectUserName",
+    "SubjectDomainName"
+  ]
+}
