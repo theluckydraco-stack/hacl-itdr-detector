@@ -1,0 +1,7 @@
+username,employee_id,department,status,privileged
+a.adebayo,EMP-1001,Finance,active,false
+b.okafor,EMP-1002,Operations,active,false
+c.owolabi,EMP-1003,Clinical Systems,active,true
+d.musa,EMP-1004,Human Resources,active,false
+e.ekong,EMP-1005,Security,active,false
+f.balogun,EMP-1006,Finance,disabled,false

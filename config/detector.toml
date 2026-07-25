@@ -1,0 +1,6 @@
+[password_spray]
+window_minutes = 10
+minimum_failed_attempts = 5
+minimum_distinct_accounts = 5
+success_correlation_minutes = 30
+duplicate_suppression_minutes = 15
