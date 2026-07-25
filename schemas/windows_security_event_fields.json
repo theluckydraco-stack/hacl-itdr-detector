@@ -1,5 +1,8 @@
 {
   "4624": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
     "TargetUserName",
     "TargetDomainName",
     "LogonType",
@@ -9,6 +12,9 @@
     "AuthenticationPackageName"
   ],
   "4625": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
     "TargetUserName",
     "TargetDomainName",
     "Status",
@@ -20,6 +26,9 @@
     "AuthenticationPackageName"
   ],
   "4663": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
     "SubjectUserName",
     "SubjectDomainName",
     "ObjectName",
@@ -30,6 +39,9 @@
     "ProcessName"
   ],
   "4740": [
+    "EventID",
+    "TimeCreated",
+    "Computer",
     "TargetUserName",
     "TargetDomainName",
     "CallerComputerName",
