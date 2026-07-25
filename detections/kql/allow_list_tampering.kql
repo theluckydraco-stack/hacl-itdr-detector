@@ -1,7 +1,10 @@
 // hACL protected allow-list modification draft.
 // Requires Audit File System, an object SACL, and Security event 4663 ingestion.
 let ProtectedFileSuffix = @"\allow_list.txt";
-let WriteMasks = dynamic([
+SecurityEvent
+| where EventID == 4663
+| where ObjectName endswith ProtectedFileSuffix
+| where AccessMask in~ (
     "0x2",      // write data / add file
     "0x4",      // append data / add subdirectory
     "0x10",     // write extended attributes
@@ -10,11 +13,7 @@ let WriteMasks = dynamic([
     "0x10000",  // delete
     "0x40000",  // write DACL
     "0x80000"   // write owner
-]);
-SecurityEvent
-| where EventID == 4663
-| where ObjectName endswith ProtectedFileSuffix
-| where AccessMask in~ (WriteMasks)
+)
 | project
     TimeGenerated,
     Computer,
