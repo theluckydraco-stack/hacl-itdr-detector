@@ -1,0 +1,34 @@
+title: hACL Protected Allow List Modification
+id: 1f52d6fe-8a69-4a51-bdf1-a1bc4b7a17f1
+status: experimental
+description: >
+  Detects Windows Security event 4663 access to a protected hACL-style
+  allow-list path. Requires Audit File System and a matching SACL.
+references:
+  - https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/advanced-audit-policy-configuration
+  - https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4663
+author: Oluwasegunfunmi Kazeem
+date: 2026-07-25
+tags:
+  - attack.defense-impairment
+  - attack.t1685
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4663
+    ObjectName|endswith:
+      - '\allow_list.txt'
+      - '\tampered_allow_list.txt'
+  write_access:
+    AccessList|contains:
+      - WriteData
+      - AppendData
+      - Delete
+      - WriteAttributes
+  condition: selection and write_access
+falsepositives:
+  - Approved hACL maintenance or deployment automation
+  - Backup, security, or file-management tooling that legitimately touches the file
+level: high
