@@ -32,7 +32,7 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-  "mypy>=1.16,<2",
+  "mypy>=1.16,<3",
   "pytest>=8,<10",
   "pytest-cov>=6,<8",
   "ruff>=0.12,<1",
