@@ -1,0 +1,26 @@
+{
+  "detections/sigma/password_spray.yml": {
+    "kind": "sigma",
+    "event_ids": [4625],
+    "event_fields": ["EventID", "IpAddress", "TargetUserName"],
+    "required_tokens": ["logsource:", "product: windows", "service: security", "type: value_count", "timespan: 10m"]
+  },
+  "detections/sigma/allow_list_tampering.yml": {
+    "kind": "sigma",
+    "event_ids": [4663],
+    "event_fields": ["EventID", "ObjectName", "AccessMask", "ProcessName", "SubjectUserName"],
+    "required_tokens": ["logsource:", "product: windows", "service: security", "EventID: 4663"]
+  },
+  "detections/kql/password_spray.kql": {
+    "kind": "kql",
+    "table": "SecurityEvent",
+    "columns": ["EventID", "IpAddress", "TargetAccount", "TimeGenerated"],
+    "required_tokens": ["summarize", "count()", "dcount(TargetAccount)", "bin(TimeGenerated, Window)"]
+  },
+  "detections/kql/allow_list_tampering.kql": {
+    "kind": "kql",
+    "table": "SecurityEvent",
+    "columns": ["EventID", "ObjectName", "AccessMask", "ProcessName", "SubjectDomainName", "SubjectUserName", "HandleId", "Computer", "TimeGenerated"],
+    "required_tokens": ["EventID == 4663", "ObjectName endswith", "AccessMask in~"]
+  }
+}
