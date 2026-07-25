@@ -53,11 +53,11 @@ def _parse_source_ip(value: object, *, event_id: int, context: str) -> str | Non
 def _parse_optional_int(value: object, *, context: str) -> int | None:
     if value in (None, ""):
         return None
-    if isinstance(value, bool):
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
         raise ParseError(f"{context}: expected an integer")
     try:
         return int(value)
-    except (TypeError, ValueError) as exc:
+    except ValueError as exc:
         raise ParseError(f"{context}: expected an integer") from exc
 
 
@@ -65,11 +65,11 @@ def parse_auth_event(payload: dict[str, Any], *, context: str) -> AuthEvent:
     """Parse one authentication event from a JSON object."""
 
     raw_event_id = payload.get("event_id")
-    if isinstance(raw_event_id, bool):
+    if isinstance(raw_event_id, bool) or not isinstance(raw_event_id, (int, str)):
         raise ParseError(f"{context}: event_id must be an integer")
     try:
         event_id = int(raw_event_id)
-    except (TypeError, ValueError) as exc:
+    except ValueError as exc:
         raise ParseError(f"{context}: event_id must be an integer") from exc
     if event_id not in SUPPORTED_EVENT_IDS:
         raise ParseError(f"{context}: unsupported event_id {event_id}")
