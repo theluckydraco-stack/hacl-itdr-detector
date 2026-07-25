@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hacl-itdr-detector"
-version = "0.1.0"
-description = "Python identity threat detection lab for password spraying and identity correlation"
+version = "0.2.0"
+description = "Python identity threat detection lab for password spraying and allow-list integrity monitoring"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -15,6 +15,7 @@ authors = [
 keywords = [
   "cybersecurity",
   "detection-engineering",
+  "file-integrity-monitoring",
   "identity-security",
   "itdr",
   "mitre-attack",
@@ -40,6 +41,7 @@ dev = [
 
 [project.scripts]
 hacl-itdr = "hacl_itdr.cli:main"
+hacl-itdr-baseline = "hacl_itdr.baseline_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
