@@ -119,7 +119,7 @@ def test_groups_failures_by_source_ip() -> None:
 
 
 def test_success_after_spray_raises_critical_for_privileged_account() -> None:
-    events = threshold_events() + [event(7, 4624, "carol")]
+    events = [*threshold_events(), event(7, 4624, "carol")]
 
     alert = detect_password_sprays(
         events, employees(), PasswordSprayConfig(), generated_at=BASE
@@ -131,8 +131,9 @@ def test_success_after_spray_raises_critical_for_privileged_account() -> None:
 
 
 def test_success_from_different_source_is_not_correlated() -> None:
-    events = threshold_events() + [
-        event(7, 4624, "carol", source_ip="198.51.100.10")
+    events = [
+        *threshold_events(),
+        event(7, 4624, "carol", source_ip="198.51.100.10"),
     ]
 
     alert = detect_password_sprays(events, employees(), PasswordSprayConfig())[0]
@@ -142,7 +143,7 @@ def test_success_from_different_source_is_not_correlated() -> None:
 
 
 def test_lockout_is_correlated_by_targeted_account() -> None:
-    events = threshold_events() + [event(6, 4740, "bob", source_ip=None)]
+    events = [*threshold_events(), event(6, 4740, "bob", source_ip=None)]
 
     alert = detect_password_sprays(events, employees(), PasswordSprayConfig())[0]
 
@@ -170,7 +171,8 @@ def test_unknown_accounts_reduce_confidence() -> None:
 
 
 def test_duplicate_suppression_avoids_overlapping_alerts() -> None:
-    events = threshold_events() + [
+    events = [
+        *threshold_events(),
         event(5, 4625, "frank"),
         event(6, 4625, "grace"),
     ]
@@ -191,7 +193,7 @@ def test_new_campaign_after_suppression_generates_second_alert() -> None:
     ]
 
     alerts = detect_password_sprays(
-        first + second, employees(), PasswordSprayConfig()
+        [*first, *second], employees(), PasswordSprayConfig()
     )
 
     assert len(alerts) == 2
